@@ -2,10 +2,25 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 import random
 import datetime
 import os
+import sqlite3
 import enchant
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'  # Change to a secure key
+
+# Initialize SQLite DB for users
+DB_PATH = 'people.db'
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL
+    )''')
+    conn.commit()
+    conn.close()
+init_db()
 
 DICTIONARY = enchant.Dict('en_US')
 
@@ -36,12 +51,37 @@ def daily():
 
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
+    error = None
     if request.method == 'POST':
+        action = request.form.get('action')
         username = request.form.get('username')
-        if username:
-            session['username'] = username
-            return redirect(url_for('profile'))
-    return render_template('profile.html', username=session.get('username'))
+        password = request.form.get('password')
+        if action == 'register':
+            if not username or not password:
+                error = 'Username and password required.'
+            else:
+                try:
+                    conn = sqlite3.connect(DB_PATH)
+                    c = conn.cursor()
+                    c.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, password))
+                    conn.commit()
+                    conn.close()
+                    session['username'] = username
+                    return redirect(url_for('profile'))
+                except sqlite3.IntegrityError:
+                    error = 'Username already exists.'
+        elif action == 'login':
+            conn = sqlite3.connect(DB_PATH)
+            c = conn.cursor()
+            c.execute('SELECT * FROM users WHERE username=? AND password=?', (username, password))
+            user = c.fetchone()
+            conn.close()
+            if user:
+                session['username'] = username
+                return redirect(url_for('profile'))
+            else:
+                error = 'Invalid username or password.'
+    return render_template('profile.html', username=session.get('username'), error=error)
 @app.route('/history')
 def history():
     if not session.get('username'):

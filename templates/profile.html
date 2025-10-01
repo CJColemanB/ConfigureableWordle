@@ -1,18 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>CJCB - Profile</title>
-    <link rel="stylesheet" href="/static/wordle.css">
-</head>
-<body>
-    <header>
-        <div class="logo">CJCB</div>
-        <nav>
-            <a href="/">Home</a>
-            <a href="/daily">Daily</a>
-            <a href="/profile">Profile</a>
-        </nav>
+    <main>
+        <h1>Your Profile</h1>
+        {% if username %}
+            <p>Logged in as <strong>{{ username }}</strong></p>
+            <a href="/history" class="btn">View History</a>
+        {% else %}
+            {% if error %}<p style="color:red">{{ error }}</p>{% endif %}
+            <form method="post" style="margin-bottom:2em">
+                <input type="hidden" name="action" value="login">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+                <button type="submit" class="btn">Login</button>
+            </form>
+            <form method="post">
+                <input type="hidden" name="action" value="register">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+                <button type="submit" class="btn">Sign Up</button>
+            </form>
+        {% endif %}
+    </main>
     </header>
     <main>
         <h1>Your Profile</h1>
