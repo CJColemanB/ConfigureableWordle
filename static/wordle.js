@@ -133,13 +133,44 @@ function submitGuess(row) {
                 // After animation, check win/lose and move to next row
                 if (data.result.every(c => c === 'green')) {
                     message.textContent = 'Congratulations! You guessed the word!';
+                    showLoginModal();
                 } else if (row < 5) {
                     currentRow++;
                     createBoard();
                     board.querySelector(`input[data-row='${currentRow}'][data-col='0']`).focus();
                 } else {
                     message.textContent = 'Out of attempts! Try again tomorrow.';
+                    showLoginModal();
                 }
+function showLoginModal() {
+    let modal = document.createElement('div');
+    modal.id = 'login-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h2>Save Your Wordle History!</h2>
+            <p>Login or sign up to save your guessing history and track your stats.</p>
+            <div class="modal-actions">
+                <button id="modal-login-btn" class="btn">Login / Sign Up</button>
+                <button id="modal-no-btn" class="btn alt">No Thanks</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    document.getElementById('modal-login-btn').onclick = () => {
+        window.location.href = '/profile';
+    };
+    document.getElementById('modal-no-btn').onclick = () => {
+        modal.remove();
+    };
+}
+function addLoginButtonListener() {
+    const btn = document.getElementById('login-btn');
+    if (btn) {
+        btn.onclick = () => {
+            window.location.href = '/profile';
+        };
+    }
+}
                 return;
             }
             rowBoxes[i].classList.add(data.result[i]);
