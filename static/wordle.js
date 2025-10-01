@@ -31,6 +31,11 @@ function createBoard() {
             box.dataset.col = c;
             box.value = guesses[r][c];
             box.readOnly = r !== currentRow;
+            if (r === currentRow) {
+                box.tabIndex = 0;
+            } else {
+                box.tabIndex = -1;
+            }
             box.addEventListener('input', onInput);
             box.addEventListener('keydown', onKeyDown);
             // Apply color if guessColors for this row exists
@@ -39,10 +44,27 @@ function createBoard() {
             }
             row.appendChild(box);
         }
+        // ...no submit button, only Enter key for submission...
         board.appendChild(row);
     }
     createKeyboard();
 }
+
+    // Restore focus to the correct box in current row
+    setTimeout(() => {
+        // Find next empty box in current row, or last filled
+        let focusCol = 0;
+        for (let c = 0; c < 5; c++) {
+            if (!guesses[currentRow][c]) {
+                focusCol = c;
+                break;
+            }
+            if (c === 4) focusCol = 4;
+        }
+        const input = board.querySelector(`input[data-row='${currentRow}'][data-col='${focusCol}']`);
+        if (input) input.focus();
+    }, 0);
+
 function createKeyboard() {
     const keyboardDiv = document.getElementById('wordle-keyboard');
     keyboardDiv.innerHTML = '';
@@ -63,6 +85,16 @@ function createKeyboard() {
     });
 }
 
+for (let c = 0; c < 5; c++) {
+    if (!guesses[currentRow][c]) {
+        guesses[currentRow][c] = key;
+        currentCol = c < 4 ? c + 1 : 4;
+        createBoard();
+        // ...rest of your logic...
+        break;
+    }
+}
+
 function onKeyboardClick(key) {
     if (currentRow > 5) return;
     if (keyboardState[key]) return; // Don't allow input for grayed keys
@@ -71,7 +103,16 @@ function onKeyboardClick(key) {
         if (!guesses[currentRow][c]) {
             guesses[currentRow][c] = key;
             createBoard();
-            board.querySelector(`input[data-row='${currentRow}'][data-col='${c}']`).focus();
+            // Focus next box if available
+            if (c < 4) {
+                board.querySelector(`input[data-row='${currentRow}'][data-col='${c+1}']`).focus();
+            } else {
+                // If last box filled, check if all boxes are filled, then submit
+                if (guesses[currentRow].every(l => /^[A-Z]$/.test(l))) {
+                    submitGuess(currentRow);
+                }
+            }
+            saveProgress();
             break;
         }
     }
@@ -82,23 +123,30 @@ function onInput(e) {
     const row = parseInt(box.dataset.row);
     const col = parseInt(box.dataset.col);
     const val = box.value.toUpperCase();
-    if (/^[A-Z]$/.test(val)) {
-        guesses[row][col] = val;
-        if (col < 4) {
-            board.querySelector(`input[data-row='${row}'][data-col='${col+1}']`).focus();
+        if (/^[A-Z]$/.test(val)) {
+            guesses[row][col] = val;
+            currentCol = col < 4 ? col + 1 : 4;
+            // Auto-advance focus to next box if not last
+            if (col < 4) {
+                board.querySelector(`input[data-row='${row}'][data-col='${col+1}']`).focus();
+            }
+            // Do NOT auto-submit when last box is filled
+        } else {
+            box.value = '';
         }
-    } else {
-        box.value = '';
-    }
-    createKeyboard(); // Update keyboard after input
+        createKeyboard(); // Update keyboard after input
+        saveProgress();
 }
 
 function onKeyDown(e) {
     const box = e.target;
     const row = parseInt(box.dataset.row);
     const col = parseInt(box.dataset.col);
-    if (e.key === 'Enter' && col === 4) {
-        submitGuess(row);
+    if (e.key === 'Enter') {
+        // Only submit if all boxes in the row are filled
+        if (guesses[row].every(l => /^[A-Z]$/.test(l))) {
+            submitGuess(row);
+        }
     } else if (e.key === 'Backspace' && col > 0 && box.value === '') {
         board.querySelector(`input[data-row='${row}'][data-col='${col-1}']`).focus();
     }
@@ -136,11 +184,32 @@ function submitGuess(row) {
                     showLoginModal();
                 } else if (row < 5) {
                     currentRow++;
+                    currentCol = 0;
                     createBoard();
-                    board.querySelector(`input[data-row='${currentRow}'][data-col='0']`).focus();
+                    setTimeout(() => {
+                        const input = board.querySelector(`input[data-row='${currentRow}'][data-col='0']`);
+                        if (input) input.focus();
+                    }, 0);
                 } else {
-                    message.textContent = 'Out of attempts! Try again tomorrow.';
-                    showLoginModal();
+                    // Reveal the correct answer after all attempts
+                    fetch('/check_word', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({guess: '_____'}), // dummy guess to get the answer
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data && data.answer) {
+                            message.textContent = `Out of attempts! The correct word was: ${data.answer}`;
+                        } else {
+                            message.textContent = 'Out of attempts! Try again tomorrow.';
+                        }
+                        showLoginModal();
+                    })
+                    .catch(() => {
+                        message.textContent = 'Out of attempts! Try again tomorrow.';
+                        showLoginModal();
+                    });
                 }
 function showLoginModal() {
     let modal = document.createElement('div');
@@ -191,5 +260,37 @@ function updateKeyboardState(row, guessArr, colorArr) {
 }
     });
 }
+// Utility to get today's date in YYYY-MM-DD format
+function getTodayDate() {
+    const d = new Date();
+    return d.toISOString().slice(0, 10);
+}
 
-// ...existing code...
+// Save guesses to server for logged-in user
+function saveProgress() {
+    fetch('/api/save_progress', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            date: getTodayDate(),
+            guesses: JSON.stringify(guesses)
+        })
+    });
+}
+
+// Load guesses from server for logged-in user
+function loadProgress() {
+    fetch(`/api/load_progress?date=${getTodayDate()}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.guesses) {
+                const loaded = JSON.parse(data.guesses);
+                if (Array.isArray(loaded) && loaded.length === 6) {
+                    guesses = loaded;
+                    createBoard();
+                }
+    createKeyboard();
+    saveProgress();
+            }
+});
+}
