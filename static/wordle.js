@@ -1,5 +1,11 @@
 const board = document.getElementById('wordle-board');
 const message = document.getElementById('message');
+let keyboardState = {};
+const keyboardLayout = [
+    ['Q','W','E','R','T','Y','U','I','O','P'],
+    ['A','S','D','F','G','H','J','K','L'],
+    ['Z','X','C','V','B','N','M']
+];
 document.addEventListener('DOMContentLoaded', () => {
     createBoard();
     board.querySelector(`input[data-row='0'][data-col='0']`).focus();
@@ -35,6 +41,40 @@ function createBoard() {
         }
         board.appendChild(row);
     }
+    createKeyboard();
+}
+function createKeyboard() {
+    const keyboardDiv = document.getElementById('wordle-keyboard');
+    keyboardDiv.innerHTML = '';
+    keyboardLayout.forEach(row => {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'keyboard-row';
+        row.forEach(key => {
+            const keyDiv = document.createElement('div');
+            keyDiv.className = 'keyboard-key';
+            keyDiv.textContent = key;
+            if (keyboardState[key]) {
+                keyDiv.classList.add('gray');
+            }
+            keyDiv.addEventListener('click', () => onKeyboardClick(key));
+            rowDiv.appendChild(keyDiv);
+        });
+        keyboardDiv.appendChild(rowDiv);
+    });
+}
+
+function onKeyboardClick(key) {
+    if (currentRow > 5) return;
+    if (keyboardState[key]) return; // Don't allow input for grayed keys
+    // Find first empty box in current row
+    for (let c = 0; c < 5; c++) {
+        if (!guesses[currentRow][c]) {
+            guesses[currentRow][c] = key;
+            createBoard();
+            board.querySelector(`input[data-row='${currentRow}'][data-col='${c}']`).focus();
+            break;
+        }
+    }
 }
 
 function onInput(e) {
@@ -50,6 +90,7 @@ function onInput(e) {
     } else {
         box.value = '';
     }
+    createKeyboard(); // Update keyboard after input
 }
 
 function onKeyDown(e) {
@@ -86,6 +127,9 @@ function submitGuess(row) {
         guessColors[row] = Array(5).fill(null); // Prepare to store colors for this row
         function animateBox(i) {
             if (i >= data.result.length) {
+                // After animation, update keyboard for grayed out letters
+                updateKeyboardState(row, guesses[row], data.result);
+                createKeyboard();
                 // After animation, check win/lose and move to next row
                 if (data.result.every(c => c === 'green')) {
                     message.textContent = 'Congratulations! You guessed the word!';
@@ -104,6 +148,16 @@ function submitGuess(row) {
             setTimeout(() => animateBox(i+1), 350);
         }
         animateBox(0);
+
+// Update keyboardState for grayed out letters
+function updateKeyboardState(row, guessArr, colorArr) {
+    for (let i = 0; i < guessArr.length; i++) {
+        const letter = guessArr[i];
+        if (colorArr[i] === 'red') {
+            keyboardState[letter] = true;
+        }
+    }
+}
     });
 }
 

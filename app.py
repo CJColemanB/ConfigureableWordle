@@ -2,26 +2,29 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 import random
 import datetime
 import os
-import nltk
-from nltk.corpus import words
+import enchant
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'  # Change to a secure key
 
-# Ensure nltk words corpus is downloaded
-try:
-    nltk.data.find('corpora/words')
-except LookupError:
-    nltk.download('words')
+DICTIONARY = enchant.Dict('en_US')
 
-# Get all 5-letter English words
-WORDS = set(w.lower() for w in words.words() if len(w) == 5 and w.isalpha())
-
-# Helper to get word of the day
-def get_word_of_the_day():
+# Helper to get word of the day (5-letter for now)
+def get_word_of_the_day(length=5):
+    # For now, generate random 5-letter word from all possible combinations
+    # In future, you can expand to other lengths
+    # This is a simple way to get a valid word
+    # You may want to cache or optimize for performance
+    possible = []
+    # Use a simple word list for now, but you can expand
+    with open('static/wordlist.txt') as f:
+        for line in f:
+            w = line.strip().lower()
+            if len(w) == length and DICTIONARY.check(w):
+                possible.append(w)
     today = datetime.date.today()
     random.seed(today.toordinal())
-    return random.choice(list(WORDS))
+    return random.choice(possible) if possible else None
 
 @app.route('/')
 def home():
@@ -51,7 +54,7 @@ def check_word():
     data = request.get_json()
     guess = data.get('guess', '').lower()
     word = get_word_of_the_day()
-    if guess not in WORDS:
+    if not DICTIONARY.check(guess):
         return jsonify({'valid': False, 'message': 'Not a valid English word.'})
     result = []
     for i, letter in enumerate(guess):
