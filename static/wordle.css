@@ -1,0 +1,92 @@
+body {
+    background: #fff;
+    color: #222;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+}
+header {
+    background: linear-gradient(90deg, #e8ffe8 0%, #d6ffd6 100%);
+    padding: 1em 2em;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.logo {
+    font-weight: bold;
+    font-size: 1.5em;
+    color: #32cd32;
+    margin-right: 2em;
+}
+nav a {
+    margin-right: 1.5em;
+    text-decoration: none;
+    color: #32cd32;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+nav a:hover {
+    color: #228b22;
+}
+main {
+    padding: 2em;
+    text-align: center;
+}
+.home-buttons {
+    margin-top: 2em;
+}
+.btn {
+    background: #32cd32;
+    color: #fff;
+    border: none;
+    padding: 1em 2em;
+    margin: 0.5em;
+    border-radius: 8px;
+    font-size: 1em;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+.btn:hover {
+    background: #228b22;
+}
+#wordle-board {
+    display: inline-block;
+    margin-top: 2em;
+}
+.wordle-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.5em;
+}
+.wordle-box {
+    width: 48px;
+    height: 48px;
+    border: 2px solid #d6ffd6;
+    margin: 0 4px;
+    font-size: 2em;
+    text-align: center;
+    background: #fff;
+    color: #222;
+    border-radius: 6px;
+    transition: background 0.2s, border 0.2s;
+}
+.wordle-box.green {
+    background: #32cd32;
+    color: #fff;
+    border-color: #32cd32;
+}
+.wordle-box.yellow {
+    background: #ffff99;
+    color: #222;
+    border-color: #ffff99;
+}
+.wordle-box.red {
+    background: #ffcccc;
+    color: #222;
+    border-color: #ffcccc;
+}
+#message {
+    margin-top: 1em;
+    font-weight: bold;
+    color: #32cd32;
+}
