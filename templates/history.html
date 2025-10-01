@@ -4,6 +4,62 @@
     <meta charset="UTF-8">
     <title>CJCB - History</title>
     <link rel="stylesheet" href="/static/wordle.css">
+    <style>
+        body {
+            background: linear-gradient(120deg, #e8f6ff 0%, #e8ffe8 100%);
+        }
+        .history-table {
+            width: 100%;
+            max-width: 700px;
+            margin: 2em auto;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+        .history-table th, .history-table td {
+            padding: 0.8em 1em;
+            border-bottom: 1px solid #e8ffe8;
+            text-align: center;
+        }
+        .history-table th {
+            background: #e8ffe8;
+            color: #32cd32;
+        }
+        .history-table tr:last-child td {
+            border-bottom: none;
+        }
+        .graph-container {
+            max-width: 700px;
+            margin: 2em auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            padding: 2em 1em;
+        }
+        .filter-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1em;
+            margin-bottom: 1em;
+        }
+        .arrow-btn {
+            background: #e8f6ff;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 1.5em;
+            color: #32cd32;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .arrow-btn:hover {
+            background: #b3e6ff;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -17,9 +73,34 @@
     </header>
     <main>
         <h1>Wordle History</h1>
-        <div id="history-content">
-            <!-- History will be shown here if logged in -->
+        <div class="filter-controls">
+            <button class="arrow-btn" id="prev-period">&#8592;</button>
+            <select id="filter-period">
+                <option value="week">Week</option>
+                <option value="month">Month</option>
+                <option value="season">Season</option>
+                <option value="year">Year</option>
+            </select>
+            <button class="arrow-btn" id="next-period">&#8594;</button>
         </div>
+        <div class="graph-container">
+            <canvas id="history-graph" width="650" height="300"></canvas>
+        </div>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Correct Word</th>
+                    <th>Last Guess</th>
+                    <th>Guesses Used</th>
+                </tr>
+            </thead>
+            <tbody id="history-table-body">
+                <!-- Table rows will be inserted here by JS -->
+            </tbody>
+        </table>
     </main>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/history.js"></script>
 </body>
 </html>

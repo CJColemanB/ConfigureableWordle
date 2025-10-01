@@ -8,7 +8,6 @@ import enchant
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'  # Change to a secure key
 
-# Initialize SQLite DB for users
 DB_PATH = 'people.db'
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -16,7 +15,18 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL
+        forename TEXT,
+        surname TEXT,
+        dob TEXT,
+        password TEXT NOT NULL,
+        email TEXT
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS wordle_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        guesses INTEGER NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id)
     )''')
     conn.commit()
     conn.close()
@@ -26,12 +36,7 @@ DICTIONARY = enchant.Dict('en_US')
 
 # Helper to get word of the day (5-letter for now)
 def get_word_of_the_day(length=5):
-    # For now, generate random 5-letter word from all possible combinations
-    # In future, you can expand to other lengths
-    # This is a simple way to get a valid word
-    # You may want to cache or optimize for performance
     possible = []
-    # Use a simple word list for now, but you can expand
     with open('static/wordlist.txt') as f:
         for line in f:
             w = line.strip().lower()
@@ -82,6 +87,33 @@ def profile():
             else:
                 error = 'Invalid username or password.'
     return render_template('profile.html', username=session.get('username'), error=error)
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        forename = request.form.get('forename')
+        surname = request.form.get('surname')
+        dob = request.form.get('dob')
+        email = request.form.get('email')
+        if not all([username, password, forename, surname, dob, email]):
+            error = 'All fields are required.'
+        else:
+            try:
+                conn = sqlite3.connect(DB_PATH)
+                c = conn.cursor()
+                c.execute('INSERT INTO users (username, forename, surname, dob, password, email) VALUES (?, ?, ?, ?, ?, ?)',
+                          (username, forename, surname, dob, password, email))
+                conn.commit()
+                conn.close()
+                session['username'] = username
+                return redirect(url_for('profile'))
+            except sqlite3.IntegrityError:
+                error = 'Username already exists.'
+    return render_template('signup.html', error=error)
+
 @app.route('/history')
 def history():
     if not session.get('username'):
